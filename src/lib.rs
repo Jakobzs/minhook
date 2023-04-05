@@ -198,11 +198,13 @@ mod tests {
 
             hooks.apply();
 
+            // Test that the hooks are applied.
             assert_eq!(test_fn1(), 1);
             assert_eq!(test_fn2(1), 2);
 
             hooks.unapply();
 
+            // Test that the hooks are unapplied.
             assert_eq!(test_fn1(), 0);
             assert_eq!(test_fn2(1), 1);
         }
