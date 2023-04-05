@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 once_cell = "1"
-cc = "1"
+
+[build-dependencies]
+cc = "1.0.72"

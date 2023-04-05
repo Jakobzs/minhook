@@ -20,7 +20,7 @@ fn main() {
         _ => panic!("Architecture '{arch}' not supported."),
     };
 
-    let mh_src_dir = Path::new(&root_dir).join("vendor/minhook/src");
+    let mh_src_dir = Path::new(&root_dir).join("minhook/src");
 
     cc::Build::new()
         .file(mh_src_dir.join("buffer.c"))
@@ -29,7 +29,7 @@ fn main() {
         .file(mh_src_dir.join(hde))
         .compile("libminhook.a");
 
-    println!("cargo:rerun-if-changed=vendor/minhook/src");
+    println!("cargo:rerun-if-changed=minhook/src");
     println!(
         "cargo:rustc-link-search=native={}",
         env::var("OUT_DIR").unwrap()
