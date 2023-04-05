@@ -1,5 +1,6 @@
 #![allow(dead_code, non_snake_case, non_camel_case_types)]
 
+use once_cell::sync::OnceCell;
 use std::ffi::c_void;
 use std::ptr::null_mut;
 
@@ -73,16 +74,30 @@ pub struct MhHook {
     trampoline: *mut c_void,
 }
 
-impl MhHook {
-    /// # Safety
-    pub unsafe fn new(addr: *mut c_void, hook_impl: *mut c_void) -> Result<Self, MH_STATUS> {
-        /*static INIT_CELL: LazyLock<()> = LazyLock::new(|| {
-            let status = unsafe { MH_Initialize() };
+static INIT_CELL: OnceCell<()> = OnceCell::new();
 
+impl MhHook {
+    /// Create a new hook.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - Address of the function to hook.
+    /// * `hook_impl` - Address of the function to call instead of `addr`.
+    ///
+    /// # Returns
+    ///
+    /// A `MhHook` struct that holds the original address, hook function address,
+    /// and trampoline address for the given hook.
+    ///
+    /// # Safety
+    ///
+    /// `addr` must be a valid address to a function.
+    /// `hook_impl` must be a valid address to a function.
+    pub unsafe fn new(addr: *mut c_void, hook_impl: *mut c_void) -> Result<Self, MH_STATUS> {
+        INIT_CELL.get_or_init(|| {
+            let status = unsafe { MH_Initialize() };
             status.ok().expect("Couldn't initialize hooks");
         });
-
-        LazyLock::force(&INIT_CELL);*/
 
         let mut trampoline = null_mut();
         let status = MH_CreateHook(addr, hook_impl, &mut trampoline);
@@ -146,5 +161,56 @@ impl MhHooks {
 impl Drop for MhHooks {
     fn drop(&mut self) {
         // self.unapply();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::transmute;
+
+    #[test]
+    fn test_hooks() {
+        unsafe {
+            let hooks = MhHooks::new(vec![
+                MhHook::new(
+                    transmute::<_, *mut c_void>(test_fn as fn() -> i32),
+                    transmute::<_, *mut c_void>(test_fn_hook as fn() -> i32),
+                )
+                .unwrap(),
+                MhHook::new(
+                    transmute::<_, *mut c_void>(test_fn2 as fn(i32) -> i32),
+                    transmute::<_, *mut c_void>(test_fn2_hook as fn(i32) -> i32),
+                )
+                .unwrap(),
+            ])
+            .unwrap();
+
+            hooks.apply();
+
+            assert_eq!(test_fn(), 1);
+            assert_eq!(test_fn2(1), 2);
+
+            hooks.unapply();
+
+            assert_eq!(test_fn(), 0);
+            assert_eq!(test_fn2(1), 1);
+        }
+    }
+
+    fn test_fn() -> i32 {
+        0
+    }
+
+    fn test_fn_hook() -> i32 {
+        1
+    }
+
+    fn test_fn2(x: i32) -> i32 {
+        x
+    }
+
+    fn test_fn2_hook(x: i32) -> i32 {
+        x + 1
     }
 }
