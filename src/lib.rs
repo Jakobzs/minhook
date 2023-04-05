@@ -60,9 +60,23 @@ extern "system" {
         pDetour: *mut c_void,
         ppOriginal: *mut *mut c_void,
     ) -> MH_STATUS;
+    fn MH_CreateHookApi(
+        pszModule: *const u8,
+        pszProcName: *const u8,
+        pDetour: *mut c_void,
+        ppOriginal: *mut *mut c_void,
+    ) -> MH_STATUS;
+    fn MH_CreateHookApiEx(
+        pszModule: *const u8,
+        pszProcName: *const u8,
+        pDetour: *mut c_void,
+        ppOriginal: *mut *mut c_void,
+        ppTarget: *mut *mut c_void,
+    ) -> MH_STATUS;
+    fn MH_RemoveHook(pTarget: *mut c_void) -> MH_STATUS;
     fn MH_EnableHook(pTarget: *mut c_void) -> MH_STATUS;
-    fn MH_QueueEnableHook(pTarget: *mut c_void) -> MH_STATUS;
     fn MH_DisableHook(pTarget: *mut c_void) -> MH_STATUS;
+    fn MH_QueueEnableHook(pTarget: *mut c_void) -> MH_STATUS;
     fn MH_QueueDisableHook(pTarget: *mut c_void) -> MH_STATUS;
     fn MH_ApplyQueued() -> MH_STATUS;
 }
