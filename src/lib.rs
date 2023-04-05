@@ -1,8 +1,8 @@
 #![allow(dead_code, non_snake_case, non_camel_case_types)]
 
 use once_cell::sync::OnceCell;
-use std::ffi::c_void;
-use std::ptr::null_mut;
+use std::{ffi::c_void, ptr::null_mut};
+use tracing::debug;
 
 #[allow(non_camel_case_types)]
 #[must_use]
@@ -96,11 +96,14 @@ impl MhHook {
     pub unsafe fn new(addr: *mut c_void, hook_impl: *mut c_void) -> Result<Self, MH_STATUS> {
         INIT_CELL.get_or_init(|| {
             let status = unsafe { MH_Initialize() };
+            debug!("MH_Initialize: {:?}", status);
+
             status.ok().expect("Couldn't initialize hooks");
         });
 
         let mut trampoline = null_mut();
         let status = MH_CreateHook(addr, hook_impl, &mut trampoline);
+        debug!("MH_CreateHook: {:?}", status);
 
         status.ok()?;
 
@@ -117,10 +120,12 @@ impl MhHook {
 
     unsafe fn queue_enable(&self) {
         let status = MH_QueueEnableHook(self.hook_impl);
+        debug!("MH_QueueEnableHook: {:?}", status);
     }
 
     unsafe fn queue_disable(&self) {
         let status = MH_QueueDisableHook(self.hook_impl);
+        debug!("MH_QueueDisableHook: {:?}", status);
     }
 }
 
@@ -141,20 +146,25 @@ impl MhHooks {
     pub fn unapply(&self) {
         unsafe { MhHooks::unapply_hooks(&self.0) };
         let status = unsafe { MH_Uninitialize() };
+        debug!("MH_Uninitialize: {:?}", status);
     }
 
     unsafe fn apply_hooks(hooks: &[MhHook]) {
         for hook in hooks {
             let status = MH_QueueEnableHook(hook.addr);
+            debug!("MH_QueueEnable: {:?}", status);
         }
         let status = MH_ApplyQueued();
+        debug!("MH_ApplyQueued: {:?}", status);
     }
 
     unsafe fn unapply_hooks(hooks: &[MhHook]) {
         for hook in hooks {
             let status = MH_QueueDisableHook(hook.addr);
+            debug!("MH_QueueDisable: {:?}", status);
         }
         let status = MH_ApplyQueued();
+        debug!("MH_ApplyQueued: {:?}", status);
     }
 }
 
@@ -172,10 +182,10 @@ mod tests {
     #[test]
     fn test_hooks() {
         unsafe {
-            let hooks = MhHooks::new(vec![
+            let hooks = MhHooks::new([
                 MhHook::new(
-                    transmute::<_, *mut c_void>(test_fn as fn() -> i32),
-                    transmute::<_, *mut c_void>(test_fn_hook as fn() -> i32),
+                    transmute::<_, *mut c_void>(test_fn1 as fn() -> i32),
+                    transmute::<_, *mut c_void>(test_fn1_hook as fn() -> i32),
                 )
                 .unwrap(),
                 MhHook::new(
@@ -188,21 +198,21 @@ mod tests {
 
             hooks.apply();
 
-            assert_eq!(test_fn(), 1);
+            assert_eq!(test_fn1(), 1);
             assert_eq!(test_fn2(1), 2);
 
             hooks.unapply();
 
-            assert_eq!(test_fn(), 0);
+            assert_eq!(test_fn1(), 0);
             assert_eq!(test_fn2(1), 1);
         }
     }
 
-    fn test_fn() -> i32 {
+    fn test_fn1() -> i32 {
         0
     }
 
-    fn test_fn_hook() -> i32 {
+    fn test_fn1_hook() -> i32 {
         1
     }
 
