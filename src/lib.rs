@@ -42,7 +42,11 @@ pub enum MH_STATUS {
 }
 
 extern "system" {
+    /// Initializes the MinHook library. You must call this function in the
+    /// beginning of your program.
     fn MH_Initialize() -> MH_STATUS;
+    /// Uninitialize the MinHook library. You must call this function EXACTLY
+    // ONCE at the end of your program.
     fn MH_Uninitialize() -> MH_STATUS;
     fn MH_CreateHook(
         pTarget: *mut c_void,
@@ -224,5 +228,43 @@ mod tests {
 
     fn test_fn2_hook(x: i32) -> i32 {
         x + 1
+    }
+
+    type FnType = fn() -> i32;
+    static TRAMPOLINE: OnceCell<FnType> = OnceCell::new();
+
+    fn test_fn_trampoline_orig() -> i32 {
+        21
+    }
+
+    fn test_fn_trampoline_hook() -> i32 {
+        let _val = 42;
+
+        // ... more would go here ...
+
+        // Call the trampoline function.
+        let trampoline = TRAMPOLINE.get().unwrap();
+        trampoline()
+    }
+
+    #[test]
+    fn test_hooks_trampoline() {
+        unsafe {
+            let hook = MhHook::new(
+                transmute::<_, *mut c_void>(test_fn_trampoline_orig as fn() -> i32),
+                transmute::<_, *mut c_void>(test_fn_trampoline_hook as fn() -> i32),
+            )
+            .unwrap();
+
+            TRAMPOLINE.get_or_init(|| std::mem::transmute(hook.trampoline()));
+
+            let hooks = MhHooks::new([hook]).unwrap();
+
+            hooks.apply();
+
+            assert_eq!(test_fn_trampoline_orig(), 21);
+
+            hooks.unapply();
+        }
     }
 }
