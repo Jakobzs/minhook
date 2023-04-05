@@ -46,8 +46,15 @@ extern "system" {
     /// beginning of your program.
     fn MH_Initialize() -> MH_STATUS;
     /// Uninitialize the MinHook library. You must call this function EXACTLY
-    // ONCE at the end of your program.
+    /// ONCE at the end of your program.
     fn MH_Uninitialize() -> MH_STATUS;
+    /// Creates a hook for the specified target function, in disabled state.
+    ///
+    /// # Arguments
+    ///
+    /// * `pTarget` \[in\] - A pointer to the target function, which will be overridden by the detour function.
+    /// * `pDetour` \[in\] - A pointer to the detour function, which will override the target function.
+    /// * `ppOriginal` \[out\] - A pointer to the trampoline function, which will be used to call the original target function. This parameter can be NULL.
     fn MH_CreateHook(
         pTarget: *mut c_void,
         pDetour: *mut c_void,
