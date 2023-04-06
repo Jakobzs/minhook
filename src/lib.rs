@@ -21,8 +21,8 @@ pub struct MinHook {}
 
 impl MinHook {
     fn initialize() {
-        MINHOOK_INIT.get_or_init(|| unsafe {
-            let status = MH_Initialize();
+        MINHOOK_INIT.get_or_init(|| {
+            let status = unsafe { MH_Initialize() };
             debug!("MH_Initialize: {:?}", status);
 
             status.ok().expect("Couldn't initialize MinHook");
@@ -34,8 +34,8 @@ impl MinHook {
         // Make sure we are initialized before we uninitialize
         Self::initialize();
 
-        MINHOOK_UNINIT.get_or_init(|| unsafe {
-            let status = MH_Uninitialize();
+        MINHOOK_UNINIT.get_or_init(|| {
+            let status = unsafe { MH_Uninitialize() };
             debug!("MH_Uninitialize: {:?}", status);
 
             status.ok().expect("Couldn't uninitialize MinHook");
