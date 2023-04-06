@@ -1,0 +1,24 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable --profile minimal -c rustfmt,clippy
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D clippy::all
+
+      - name: Test
+        run: cargo test --all-targets
