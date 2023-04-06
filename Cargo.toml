@@ -8,7 +8,7 @@ repository = "https://github.com/Jakobzs/minhook"
 documentation = "https://docs.rs/minhook"
 license-file = "LICENSE"
 readme = "README.md"
-keywords = ["minhook", "hooking", "hook", "windows", "api", "hook", "detour"]
+keywords = ["minhook", "hooking", "hook", "windows", "api", "detour", "trampoline", "x86", "x64"]
 authors = ["Jakobzs <31919330+Jakobzs@users.noreply.github.com>"]
 
 [dependencies]
