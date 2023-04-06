@@ -250,6 +250,16 @@ pub enum MH_STATUS {
     MH_ERROR_FUNCTION_NOT_FOUND,
 }
 
+impl MH_STATUS {
+    pub fn ok(self) -> Result<(), MH_STATUS> {
+        if self == MH_STATUS::MH_OK {
+            Ok(())
+        } else {
+            Err(self)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

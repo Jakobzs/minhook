@@ -93,13 +93,3 @@ extern "system" {
     /// Applies all queued changes in one go.
     pub fn MH_ApplyQueued() -> MH_STATUS;
 }
-
-impl MH_STATUS {
-    pub fn ok(self) -> Result<(), MH_STATUS> {
-        if self == MH_STATUS::MH_OK {
-            Ok(())
-        } else {
-            Err(self)
-        }
-    }
-}
