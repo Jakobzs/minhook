@@ -3,10 +3,10 @@ use ffi::{
     MH_EnableHook, MH_Initialize, MH_QueueDisableHook, MH_QueueEnableHook, MH_RemoveHook,
     MH_Uninitialize,
 };
-use once_cell::sync::OnceCell;
 use std::{
     ffi::{c_void, CString},
     ptr::null_mut,
+    sync::Once,
 };
 use tracing::debug;
 
@@ -14,14 +14,14 @@ mod ffi;
 
 const MH_ALL_HOOKS: *const i32 = std::ptr::null();
 
-static MINHOOK_INIT: OnceCell<()> = OnceCell::new();
-static MINHOOK_UNINIT: OnceCell<()> = OnceCell::new();
+static MINHOOK_INIT: Once = Once::new();
+static MINHOOK_UNINIT: Once = Once::new();
 
 pub struct MinHook {}
 
 impl MinHook {
     fn initialize() {
-        MINHOOK_INIT.get_or_init(|| {
+        MINHOOK_INIT.call_once(|| {
             let status = unsafe { MH_Initialize() };
             debug!("MH_Initialize: {:?}", status);
 
@@ -34,7 +34,7 @@ impl MinHook {
         // Make sure we are initialized before we uninitialize
         Self::initialize();
 
-        MINHOOK_UNINIT.get_or_init(|| {
+        MINHOOK_UNINIT.call_once(|| {
             let status = unsafe { MH_Uninitialize() };
             debug!("MH_Uninitialize: {:?}", status);
 
@@ -263,6 +263,7 @@ impl MH_STATUS {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use once_cell::sync::OnceCell;
     use std::{ffi::c_void, mem};
 
     #[test]
