@@ -6,6 +6,8 @@
 
 A Rust wrapper for the [MinHook](https://github.com/TsudaKageyu/minhook) library.
 
+Unlike other detouring crates, this crate does **not** require nightly. 
+
 ## Usage
 
 Add this to your `Cargo.toml`:
@@ -16,6 +18,8 @@ minhook = "0.0"
 ```
 
 ## Example
+
+Please refer to the tests for examples on how to use this crate for the time being.
 
 ```rust
 fn main() -> Result<(), MH_STATUS> {
