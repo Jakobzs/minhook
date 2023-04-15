@@ -68,7 +68,9 @@ impl MinHook {
     ) -> Result<*mut c_void, MH_STATUS> {
         Self::initialize();
 
-        let module_name = CString::new(module_name.as_ref()).unwrap();
+        let mut module_name = module_name.as_ref().encode_utf16().collect::<Vec<_>>();
+        module_name.push(0);
+
         let proc_name = CString::new(proc_name.as_ref()).unwrap();
         let mut pp_original: *mut c_void = null_mut();
         let status = unsafe {
@@ -96,7 +98,9 @@ impl MinHook {
     ) -> Result<(*mut c_void, *mut *mut c_void), MH_STATUS> {
         Self::initialize();
 
-        let module_name = CString::new(module_name.as_ref()).unwrap();
+        let mut module_name = module_name.as_ref().encode_utf16().collect::<Vec<_>>();
+        module_name.push(0);
+
         let proc_name = CString::new(proc_name.as_ref()).unwrap();
         let mut pp_original: *mut c_void = null_mut();
         let pp_target: *mut *mut c_void = null_mut();
