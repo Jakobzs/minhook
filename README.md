@@ -19,11 +19,36 @@ minhook = "0.1.0"
 
 ## Example
 
-Please refer to the tests for examples on how to use this crate for the time being.
+This example shows how to create a hook for a function, and also call the original function.
 
 ```rust
+use minhook::{MinHook, MH_STATUS};
+
 fn main() -> Result<(), MH_STATUS> {
-// WIP
+    // Create a hook for the test function
+    let test_func_addr = unsafe { MinHook::create_hook(test as _, test_hook as _)? };
+
+    // Enable the hook
+    unsafe { MinHook::enable_all_hooks()? };
+
+    // Call the detoured test function
+    assert_eq!(test(), 1);
+
+    // Transmute the original test function address to a function pointer
+    let test_func = unsafe { std::mem::transmute::<_, fn() -> i32>(test_func_addr) };
+
+    // Call the original test function
+    assert_eq!(test_func(), 0);
+
+    Ok(())
+}
+
+fn test() -> i32 {
+    0
+}
+
+fn test_hook() -> i32 {
+    1
 }
 ```
 
