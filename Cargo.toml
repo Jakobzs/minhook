@@ -1,6 +1,6 @@
 [package]
 name = "minhook"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 description = "A Rust wrapper for MinHook, a minimalistic x86/x64 API hooking library for Windows."
 homepage = "https://github.com/Jakobzs/minhook"
