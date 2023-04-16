@@ -25,19 +25,19 @@ This example shows how to create a hook for a function, and also call the origin
 use minhook::{MinHook, MH_STATUS};
 
 fn main() -> Result<(), MH_STATUS> {
-    // Create a hook for the test function
+    // Create a hook for the return_0 function
     let return_0_addr = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
 
     // Enable the hook
     unsafe { MinHook::enable_all_hooks()? };
 
-    // Call the detoured test function
+    // Call the detoured return_0 function, it should return 1
     assert_eq!(return_0(), 1);
 
-    // Transmute the original test function address to a function pointer
+    // Transmute the original return_0 function address to a function pointer
     let return_0_orig = unsafe { std::mem::transmute::<_, fn() -> i32>(return_0_addr) };
 
-    // Call the original test function
+    // Call the original return_0 function
     assert_eq!(return_0_orig(), 0);
 
     Ok(())
