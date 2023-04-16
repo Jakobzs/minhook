@@ -25,7 +25,7 @@ This example shows how to create a hook for a function, and also call the origin
 use minhook::{MinHook, MH_STATUS};
 
 fn main() -> Result<(), MH_STATUS> {
-    // Create a hook for the return_0 function
+    // Create a hook for the return_0 function, detouring it to return_1
     let return_0_addr = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
 
     // Enable the hook
