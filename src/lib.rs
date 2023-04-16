@@ -134,14 +134,7 @@ impl MinHook {
 
     /// # Safety
     pub unsafe fn enable_all_hooks() -> Result<(), MH_STATUS> {
-        Self::initialize();
-
-        let status = unsafe { MH_EnableHook(MH_ALL_HOOKS as *mut _) };
-        debug!("MH_EnableHook: {:?}", status);
-        match status {
-            MH_STATUS::MH_OK => Ok(()),
-            _ => Err(status),
-        }
+        Self::enable_hook(MH_ALL_HOOKS as *mut _)
     }
 
     /// # Safety
@@ -158,14 +151,7 @@ impl MinHook {
 
     /// # Safety
     pub unsafe fn disable_all_hooks() -> Result<(), MH_STATUS> {
-        Self::initialize();
-
-        let status = unsafe { MH_DisableHook(MH_ALL_HOOKS as *mut _) };
-        debug!("MH_DisableHook: {:?}", status);
-        match status {
-            MH_STATUS::MH_OK => Ok(()),
-            _ => Err(status),
-        }
+        Self::disable_hook(MH_ALL_HOOKS as *mut _)
     }
 
     /// # Safety
