@@ -26,28 +26,28 @@ use minhook::{MinHook, MH_STATUS};
 
 fn main() -> Result<(), MH_STATUS> {
     // Create a hook for the test function
-    let test_func_addr = unsafe { MinHook::create_hook(test as _, test_hook as _)? };
+    let return_0_addr = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
 
     // Enable the hook
     unsafe { MinHook::enable_all_hooks()? };
 
     // Call the detoured test function
-    assert_eq!(test(), 1);
+    assert_eq!(return_0(), 1);
 
     // Transmute the original test function address to a function pointer
-    let test_func = unsafe { std::mem::transmute::<_, fn() -> i32>(test_func_addr) };
+    let return_0_orig = unsafe { std::mem::transmute::<_, fn() -> i32>(return_0_addr) };
 
     // Call the original test function
-    assert_eq!(test_func(), 0);
+    assert_eq!(return_0_orig(), 0);
 
     Ok(())
 }
 
-fn test() -> i32 {
+fn return_0() -> i32 {
     0
 }
 
-fn test_hook() -> i32 {
+fn return_1() -> i32 {
     1
 }
 ```
