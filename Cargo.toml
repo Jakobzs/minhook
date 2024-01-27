@@ -8,11 +8,11 @@ repository = "https://github.com/Jakobzs/minhook"
 documentation = "https://docs.rs/minhook"
 license-file = "LICENSE"
 readme = "README.md"
-keywords = ["minhook","hooking","hook","windows","detour"]
+keywords = ["minhook", "hooking", "hook", "windows", "detour"]
 authors = ["Jakobzs <31919330+Jakobzs@users.noreply.github.com>"]
 
 [dependencies]
-tracing = "0.1"
+tracing = { version = "0.1", features = ["log"] }
 
 [dev-dependencies]
 once_cell = "1"
