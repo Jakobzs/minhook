@@ -43,8 +43,6 @@ impl MinHook {
     }
 
     /// # Safety
-    ///
-    /// This can be made safe if target and detour can verified as valid function pointers and will not be freed
     pub unsafe fn create_hook(
         target: *mut c_void,
         detour: *mut c_void,
