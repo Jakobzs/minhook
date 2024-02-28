@@ -11,6 +11,9 @@ readme = "README.md"
 keywords = ["minhook", "hooking", "hook", "windows", "detour"]
 authors = ["Jakobzs <31919330+Jakobzs@users.noreply.github.com>"]
 
+[package.metadata.docs.rs]
+default-target = "x86_64-pc-windows-msvc"
+
 [dependencies]
 tracing = { version = "0.1", features = ["log"] }
 
@@ -19,6 +22,3 @@ once_cell = "1"
 
 [build-dependencies]
 cc = "1"
-
-[package.metadata.docs.rs]
-default-target = "x86_64-pc-windows-msvc"
