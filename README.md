@@ -14,7 +14,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-minhook = "0.4.1"
+minhook = "0.4.2"
 ```
 
 ## Example
