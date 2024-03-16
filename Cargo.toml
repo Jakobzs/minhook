@@ -12,7 +12,13 @@ keywords = ["minhook", "hooking", "hook", "windows", "detour"]
 authors = ["Jakobzs <31919330+Jakobzs@users.noreply.github.com>"]
 
 [package.metadata.docs.rs]
-default-target = "x86_64-pc-windows-msvc"
+default-target = "x86_64-pc-windows-gnu"
+targets = [
+    "x86_64-pc-windows-msvc",
+    "i686-pc-windows-msvc",
+    "x86_64-pc-windows-gnu",
+    "i686-pc-windows-gnu",
+]
 
 [dependencies]
 tracing = { version = "0.1", features = ["log"] }
