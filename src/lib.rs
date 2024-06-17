@@ -1,3 +1,42 @@
+//! [MinHook](https://github.com/TsudaKageyu/minhook) is a Windows API hooking library that allows you to intercept calls to functions in programs.
+//!
+//! This crate is a wrapper around the MinHook library. Most of the API is unsafe because it is not possible to guarantee safety of the hooks.
+//!
+//! # Example
+//!
+//! This example shows how to create a hook for a function, and also call the original function.
+//!
+//! ```rust
+//! use minhook::{MinHook, MH_STATUS};
+//!
+//! fn main() -> Result<(), MH_STATUS> {
+//!     // Create a hook for the return_0 function, detouring it to return_1
+//!     let return_0_address = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
+//!
+//!     // Enable the hook
+//!     unsafe { MinHook::enable_all_hooks()? };
+//!
+//!     // Call the detoured return_0 function, it should return 1
+//!     assert_eq!(return_0(), 1);
+//!
+//!     // Transmute the original return_0 function address to a function pointer
+//!     let return_0_original = unsafe { std::mem::transmute::<_, fn() -> i32>(return_0_address) };
+//!
+//!     // Call the original return_0 function
+//!     assert_eq!(return_0_original(), 0);
+//!
+//!     Ok(())
+//! }
+//!
+//! fn return_0() -> i32 {
+//!     0
+//! }
+//!
+//! fn return_1() -> i32 {
+//!     1
+//! }
+//! ```
+
 use ffi::{
     MH_ApplyQueued, MH_CreateHook, MH_CreateHookApi, MH_CreateHookApiEx, MH_DisableHook,
     MH_EnableHook, MH_Initialize, MH_QueueDisableHook, MH_QueueEnableHook, MH_RemoveHook,
@@ -17,9 +56,11 @@ const MH_ALL_HOOKS: *const i32 = std::ptr::null();
 static MINHOOK_INIT: Once = Once::new();
 static MINHOOK_UNINIT: Once = Once::new();
 
+/// A struct to access the MinHook API.
 pub struct MinHook {}
 
 impl MinHook {
+    // Initialize MinHook
     fn initialize() {
         MINHOOK_INIT.call_once(|| {
             let status = unsafe { MH_Initialize() };
@@ -29,6 +70,8 @@ impl MinHook {
         });
     }
 
+    /// Uninitializes MinHook. This function is only possible to call once. If you want to reinitialize MinHook, you need to restart the program.
+    ///
     /// # Safety
     pub fn uninitialize() {
         // Make sure we are initialized before we uninitialize
@@ -42,6 +85,8 @@ impl MinHook {
         });
     }
 
+    /// Creates a hook for the target function and detours it to the detour function. This function returns the original function pointer.
+    ///
     /// # Safety
     pub unsafe fn create_hook(
         target: *mut c_void,
@@ -58,6 +103,8 @@ impl MinHook {
         }
     }
 
+    /// Creates a hook for the targeted API function and detours it to the detour function. This function returns the original function pointer.
+    ///
     /// # Safety
     pub unsafe fn create_hook_api<T: AsRef<str>>(
         module_name: T,
@@ -86,6 +133,7 @@ impl MinHook {
         }
     }
 
+    /// Extended function for creating a hook for the targeted API function and detours it to the detour function. This function returns the original function pointer.
     /// # Safety
     ///
     /// TOOO: Revise if this is correct
@@ -118,6 +166,8 @@ impl MinHook {
         }
     }
 
+    /// Enables a hook for the target function.
+    ///
     /// # Safety
     pub unsafe fn enable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
         Self::initialize();
@@ -130,11 +180,15 @@ impl MinHook {
         }
     }
 
+    /// Enables all hooks.
+    ///
     /// # Safety
     pub unsafe fn enable_all_hooks() -> Result<(), MH_STATUS> {
         Self::enable_hook(MH_ALL_HOOKS as *mut _)
     }
 
+    /// Disables a hook for the target function.
+    ///
     /// # Safety
     pub unsafe fn disable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
         Self::initialize();
@@ -147,11 +201,15 @@ impl MinHook {
         }
     }
 
+    /// Disables all hooks.
+    ///
     /// # Safety
     pub unsafe fn disable_all_hooks() -> Result<(), MH_STATUS> {
         Self::disable_hook(MH_ALL_HOOKS as *mut _)
     }
 
+    /// Removes a hook for the target function.
+    ///
     /// # Safety
     pub unsafe fn remove_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
         Self::initialize();
@@ -164,6 +222,8 @@ impl MinHook {
         }
     }
 
+    /// Queues a hook for enabling.
+    ///
     /// # Safety
     pub unsafe fn queue_enable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
         Self::initialize();
@@ -176,6 +236,8 @@ impl MinHook {
         }
     }
 
+    /// Queues a hook for disabling.
+    ///
     /// # Safety
     pub unsafe fn queue_disable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
         Self::initialize();
@@ -188,6 +250,8 @@ impl MinHook {
         }
     }
 
+    /// Applies all queued hooks.
+    ///
     /// # Safety
     pub unsafe fn apply_queued() -> Result<(), MH_STATUS> {
         Self::initialize();
@@ -201,6 +265,7 @@ impl MinHook {
     }
 }
 
+/// MinHook status codes.
 #[allow(non_camel_case_types)]
 #[must_use]
 #[repr(C)]

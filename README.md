@@ -2,11 +2,9 @@
 
 [![Rust](https://github.com/Jakobzs/minhook/actions/workflows/rust.yml/badge.svg)](https://github.com/Jakobzs/minhook/actions/workflows/rust.yml)
 [![Crates.io](https://img.shields.io/crates/v/minhook)](https://crates.io/crates/minhook)
-[![rustdoc](https://img.shields.io/badge/docs-rustdoc-brightgreen)](https://docs.rs/minhook)
+[![rustdoc](https://img.shields.io/badge/docs-rustdoc-brightgreen)](https://jakobzs.github.io/minhook/minhook)
 
 A Rust wrapper for the [MinHook](https://github.com/TsudaKageyu/minhook) library.
-
-Unlike other detouring crates, this crate does **not** require nightly. 
 
 ## Usage
 
@@ -14,7 +12,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-minhook = "0.5.0"
+minhook = "0.6.0"
 ```
 
 ## Example
@@ -26,7 +24,7 @@ use minhook::{MinHook, MH_STATUS};
 
 fn main() -> Result<(), MH_STATUS> {
     // Create a hook for the return_0 function, detouring it to return_1
-    let return_0_addr = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
+    let return_0_address = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
 
     // Enable the hook
     unsafe { MinHook::enable_all_hooks()? };
@@ -35,10 +33,10 @@ fn main() -> Result<(), MH_STATUS> {
     assert_eq!(return_0(), 1);
 
     // Transmute the original return_0 function address to a function pointer
-    let return_0_orig = unsafe { std::mem::transmute::<_, fn() -> i32>(return_0_addr) };
+    let return_0_original = unsafe { std::mem::transmute::<_, fn() -> i32>(return_0_address) };
 
     // Call the original return_0 function
-    assert_eq!(return_0_orig(), 0);
+    assert_eq!(return_0_original(), 0);
 
     Ok(())
 }

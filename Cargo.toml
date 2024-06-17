@@ -1,11 +1,11 @@
 [package]
 name = "minhook"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 description = "A Rust wrapper for MinHook, a minimalistic x86/x64 API hooking library for Windows."
 homepage = "https://github.com/Jakobzs/minhook"
 repository = "https://github.com/Jakobzs/minhook"
-documentation = "https://docs.rs/minhook"
+documentation = "https://jakobzs.github.io/minhook/minhook"
 license-file = "LICENSE"
 readme = "README.md"
 keywords = ["minhook", "hooking", "hook", "windows", "detour"]
