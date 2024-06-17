@@ -6,8 +6,6 @@
 
 A Rust wrapper for the [MinHook](https://github.com/TsudaKageyu/minhook) library.
 
-Unlike other detouring crates, this crate does **not** require nightly. 
-
 ## Usage
 
 Add this to your `Cargo.toml`:
