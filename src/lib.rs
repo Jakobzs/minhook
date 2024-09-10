@@ -66,11 +66,10 @@ impl MinHook {
             let status = unsafe { MH_Initialize() };
             debug!("MH_Initialize: {:?}", status);
 
-            if let Err(e) = status.ok() {
-                // Ignore if MinHook is already initialized from an external source
-                if e != MH_STATUS::MH_ERROR_ALREADY_INITIALIZED {
-                    panic!("Could not initialize MinHook, error: {:?}", e);
-                }
+            match status.ok() {
+                Ok(_) => (), // Initialization successful, do nothing
+                Err(MH_STATUS::MH_ERROR_ALREADY_INITIALIZED) => (), // Ignore if already initialized
+                Err(e) => panic!("Could not initialize MinHook, error: {:?}", e),
             }
         });
     }
