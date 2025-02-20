@@ -12,7 +12,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-minhook = "0.6.0"
+minhook = "0.7.0"
 ```
 
 ## Example
