@@ -1,7 +1,7 @@
 use crate::MH_STATUS;
 use std::ffi::c_void;
 
-extern "system" {
+unsafe extern "system" {
     /// Initializes the MinHook library. You must call this function in the
     /// beginning of your program.
     pub fn MH_Initialize() -> MH_STATUS;

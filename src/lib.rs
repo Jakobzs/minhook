@@ -43,7 +43,7 @@ use ffi::{
     MH_Uninitialize,
 };
 use std::{
-    ffi::{c_void, CString},
+    ffi::{CString, c_void},
     ptr::null_mut,
     sync::Once,
 };
@@ -188,7 +188,7 @@ impl MinHook {
     ///
     /// # Safety
     pub unsafe fn enable_all_hooks() -> Result<(), MH_STATUS> {
-        Self::enable_hook(MH_ALL_HOOKS as *mut _)
+        unsafe { Self::enable_hook(MH_ALL_HOOKS as *mut _) }
     }
 
     /// Disables a hook for the target function.
@@ -209,7 +209,7 @@ impl MinHook {
     ///
     /// # Safety
     pub unsafe fn disable_all_hooks() -> Result<(), MH_STATUS> {
-        Self::disable_hook(MH_ALL_HOOKS as *mut _)
+        unsafe { Self::disable_hook(MH_ALL_HOOKS as *mut _) }
     }
 
     /// Removes a hook for the target function.
