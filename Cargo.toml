@@ -6,6 +6,7 @@ description = "A Rust wrapper for MinHook, a minimalistic x86/x64 API hooking li
 homepage = "https://github.com/Jakobzs/minhook"
 repository = "https://github.com/Jakobzs/minhook"
 documentation = "https://jakobzs.github.io/minhook/minhook"
+license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
 keywords = ["minhook", "hooking", "hook", "windows", "detour"]
