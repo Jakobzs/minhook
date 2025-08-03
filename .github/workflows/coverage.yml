@@ -1,0 +1,41 @@
+name: Coverage
+on: [push]
+
+jobs:
+  coverage:
+    name: Code coverage
+    runs-on: windows-latest
+    env:
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+
+      - name: Generate default features
+        run: cargo llvm-cov --no-report
+
+      - name: Generate all features
+        run: cargo llvm-cov --all-features --no-report
+
+      - name: Generate no features
+        run: cargo llvm-cov --no-default-features --no-report
+
+      - name: Show coverage results in CI
+        run: cargo llvm-cov report
+
+      - name: Generate coverage file
+        run: cargo llvm-cov report --lcov --output-path lcov.info
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}

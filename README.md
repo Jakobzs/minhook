@@ -1,18 +1,26 @@
 # minhook
 
-[![Rust](https://github.com/Jakobzs/minhook/actions/workflows/rust.yml/badge.svg)](https://github.com/Jakobzs/minhook/actions/workflows/rust.yml)
+[![CI](https://github.com/Jakobzs/minhook/actions/workflows/test.yml/badge.svg)](https://github.com/Jakobzs/minhook/actions/workflows/test.yml)
 [![Crates.io](https://img.shields.io/crates/v/minhook)](https://crates.io/crates/minhook)
 [![rustdoc](https://img.shields.io/badge/docs-rustdoc-brightgreen)](https://jakobzs.github.io/minhook/minhook)
+[![codecov](https://codecov.io/github/Jakobzs/minhook/graph/badge.svg?token=PGVBSDVD83)](https://codecov.io/github/Jakobzs/minhook)
+![MSRV](https://img.shields.io/badge/rust-1.85+-brightgreen.svg?&logo=rust)
 
 A Rust wrapper for the [MinHook](https://github.com/TsudaKageyu/minhook) library.
 
 ## Usage
 
-Add this to your `Cargo.toml`:
+Add `minhook` by using the following command:
+
+```bash
+cargo add minhook
+```
+
+Or if you prefer to add it manually, you can do so by editing your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-minhook = "0.7.1"
+minhook = "0.8.0"
 ```
 
 ## Example

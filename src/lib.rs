@@ -69,7 +69,7 @@ impl MinHook {
             match status.ok() {
                 Ok(_) => (), // Initialization successful, do nothing
                 Err(MH_STATUS::MH_ERROR_ALREADY_INITIALIZED) => (), // Ignore if already initialized
-                Err(e) => panic!("Could not initialize MinHook, error: {:?}", e),
+                Err(e) => panic!("Could not initialize MinHook, error: {e:?}"),
             }
         });
     }
@@ -137,7 +137,7 @@ impl MinHook {
         }
     }
 
-    /// Extended function for creating a hook for the targeted API function and detours it to the detour function. This function returns the original function pointer.
+    /// Extended function for creating a hook for the targeted API function and detours it to the detour function. This function returns the original function pointer as well as a pointer to the target function.
     /// # Safety
     ///
     /// TOOO: Revise if this is correct
@@ -406,7 +406,7 @@ mod tests {
     }
 
     #[test]
-    fn test_hook_trampoline() {
+    fn test_hook_trampoline_enable_and_disable_hook() {
         unsafe {
             // Create a hook for `test_fn_trampoline_orig`
             let trampoline = MinHook::create_hook(
@@ -421,7 +421,12 @@ mod tests {
             // Enable the hook.
             MinHook::enable_hook(test_fn_trampoline_orig as FnType as *mut c_void).unwrap();
 
-            assert_eq!(test_fn_trampoline_orig(69), 42)
+            assert_eq!(test_fn_trampoline_orig(69), 42);
+
+            // Disable the hook.
+            MinHook::disable_hook(test_fn_trampoline_orig as FnType as *mut c_void).unwrap();
+
+            assert_eq!(test_fn_trampoline_orig(69), 69);
         }
 
         type FnType = fn(i32) -> i32;
@@ -439,4 +444,44 @@ mod tests {
             TRAMPOLINE.get().unwrap()(val)
         }
     }
+
+    /*
+    // Currently disabled because of multithreading issues, check up on this later.
+    #[test]
+    fn test_create_hook_api_ex() {
+        // Hook get process id function
+        unsafe {
+            // Create a hook for the `GetCurrentProcessId` function using the extended API
+            let (original, target) = MinHook::create_hook_api_ex(
+                "kernel32.dll",
+                "GetCurrentProcessId",
+                get_current_process_id_hook as _,
+            )
+            .unwrap();
+
+            // Grab the current process id
+            let original_pid = std::process::id();
+
+            // Enable the hook
+            MinHook::enable_hook(target as _).unwrap();
+
+            // Call the Rust std library function to get the current process id
+            // It should return the value we set in the hook `get_current_process_id_hook`
+            assert_eq!(std::process::id(), 42);
+
+            // Transmute the original function address to a function pointer to make it callable
+            let original_fn: fn() -> u32 = std::mem::transmute(original);
+
+            // Call the original function using the original function pointer
+            assert_eq!(original_fn(), original_pid);
+
+            // Disable the hook
+            MinHook::disable_hook(target as _).unwrap();
+        }
+
+        fn get_current_process_id_hook() -> u32 {
+            42
+        }
+    }
+    */
 }
