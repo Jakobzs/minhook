@@ -1,17 +1,12 @@
 use minhook::MinHook;
-use std::ffi::c_void;
 
 #[test]
 fn test_remove_hook() {
     unsafe {
-        MinHook::create_hook(
-            test_fn as FnType as *mut c_void,
-            test_fn_hook as FnType as *mut c_void,
-        )
-        .unwrap();
+        MinHook::create_hook(test_fn as _, test_fn_hook as _).unwrap();
 
         // Remove the hook.
-        MinHook::remove_hook(test_fn as FnType as *mut c_void).unwrap();
+        MinHook::remove_hook(test_fn as _).unwrap();
 
         // Now enable all hooks
         MinHook::enable_all_hooks().unwrap();
@@ -21,8 +16,6 @@ fn test_remove_hook() {
         assert_eq!(test_fn(), 0);
         assert_eq!(test_fn_hook(), 1);
     }
-
-    type FnType = fn() -> i32;
 
     fn test_fn() -> i32 {
         0

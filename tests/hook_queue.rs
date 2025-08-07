@@ -1,6 +1,5 @@
-use std::ffi::c_void;
-
 use minhook::MinHook;
+use std::ffi::c_void;
 
 #[test]
 fn test_hooks_queue() {

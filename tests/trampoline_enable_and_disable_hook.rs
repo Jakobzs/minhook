@@ -1,27 +1,25 @@
 use minhook::MinHook;
 use once_cell::sync::OnceCell;
-use std::{ffi::c_void, mem};
+use std::mem;
 
 #[test]
 fn test_hook_trampoline_enable_and_disable_hook() {
     unsafe {
         // Create a hook for `test_fn_trampoline_orig`
-        let trampoline = MinHook::create_hook(
-            test_fn_trampoline_orig as FnType as *mut c_void,
-            test_fn_trampoline_hook as FnType as *mut c_void,
-        )
-        .unwrap();
+        let trampoline =
+            MinHook::create_hook(test_fn_trampoline_orig as _, test_fn_trampoline_hook as _)
+                .unwrap();
 
         // Store the trampoline function.
         TRAMPOLINE.get_or_init(|| mem::transmute(trampoline));
 
         // Enable the hook.
-        MinHook::enable_hook(test_fn_trampoline_orig as FnType as *mut c_void).unwrap();
+        MinHook::enable_hook(test_fn_trampoline_orig as _).unwrap();
 
         assert_eq!(test_fn_trampoline_orig(69), 42);
 
         // Disable the hook.
-        MinHook::disable_hook(test_fn_trampoline_orig as FnType as *mut c_void).unwrap();
+        MinHook::disable_hook(test_fn_trampoline_orig as _).unwrap();
 
         assert_eq!(test_fn_trampoline_orig(69), 69);
     }
