@@ -44,6 +44,7 @@ use ffi::{
 };
 use std::{
     ffi::{CString, c_void},
+    fmt,
     ptr::null_mut,
     sync::Once,
 };
@@ -316,3 +317,42 @@ impl MH_STATUS {
         }
     }
 }
+
+impl fmt::Display for MH_STATUS {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let message = match self {
+            MH_STATUS::MH_UNKNOWN => "Unknown error. Should not be returned.",
+            MH_STATUS::MH_OK => "Successful.",
+            MH_STATUS::MH_ERROR_ALREADY_INITIALIZED => "MinHook is already initialized.",
+            MH_STATUS::MH_ERROR_NOT_INITIALIZED => {
+                "MinHook is not initialized yet, or already uninitialized."
+            }
+            MH_STATUS::MH_ERROR_ALREADY_CREATED => {
+                "The hook for the specified target function is already created."
+            }
+            MH_STATUS::MH_ERROR_NOT_CREATED => {
+                "The hook for the specified target function is not created yet."
+            }
+            MH_STATUS::MH_ERROR_ENABLED => {
+                "The hook for the specified target function is already enabled."
+            }
+            MH_STATUS::MH_ERROR_DISABLED => {
+                "The hook for the specified target function is not enabled yet, or already disabled."
+            }
+            MH_STATUS::MH_ERROR_NOT_EXECUTABLE => {
+                "The specified pointer is invalid. It points the address of non-allocated and/or non-executable region."
+            }
+            MH_STATUS::MH_ERROR_UNSUPPORTED_FUNCTION => {
+                "The specified target function cannot be hooked."
+            }
+            MH_STATUS::MH_ERROR_MEMORY_ALLOC => "Failed to allocate memory.",
+            MH_STATUS::MH_ERROR_MEMORY_PROTECT => "Failed to change the memory protection.",
+            MH_STATUS::MH_ERROR_MODULE_NOT_FOUND => "The specified module is not loaded.",
+            MH_STATUS::MH_ERROR_FUNCTION_NOT_FOUND => "The specified function is not found.",
+        };
+
+        write!(f, "{message}")
+    }
+}
+
+impl std::error::Error for MH_STATUS {}
