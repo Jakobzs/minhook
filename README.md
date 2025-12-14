@@ -20,7 +20,7 @@ Or if you prefer to add it manually, you can do so by editing your `Cargo.toml` 
 
 ```toml
 [dependencies]
-minhook = "0.8.0"
+minhook = "0.9.0"
 ```
 
 ## Example
