@@ -12,8 +12,7 @@ fn test_create_hook_api_ex() {
         )
         .unwrap();
 
-        // The extended API must return the resolved target function instead of
-        // falling back to MinHook's null `MH_ALL_HOOKS` sentinel.
+        // Target should not be null, otherwise something is wrong
         assert!(!target.is_null());
 
         // Grab the current process id
