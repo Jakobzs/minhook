@@ -31,7 +31,11 @@ This example shows how to create a hook for a function, and also call the origin
 use minhook::{MinHook, MH_STATUS};
 
 fn main() -> Result<(), MH_STATUS> {
-    // Create a hook for the return_0 function, detouring it to return_1
+    // Keep calls indirect so optimized builds cannot bypass the patched entry point.
+    let return_0 = std::hint::black_box(return_0 as fn() -> i32);
+    let return_1 = std::hint::black_box(return_1 as fn() -> i32);
+
+    // Create a hook for the return_0 function, detouring it to return_1.
     let return_0_address = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
 
     // Enable the hook
@@ -49,14 +53,28 @@ fn main() -> Result<(), MH_STATUS> {
     Ok(())
 }
 
+#[inline(never)]
 fn return_0() -> i32 {
     0
 }
 
+#[inline(never)]
 fn return_1() -> i32 {
     1
 }
 ```
+
+Calls to functions defined in the same Rust crate can be optimized without going through the
+patched entry point. Keep such functions out of line and call them through an opaque function
+pointer, as the example does, when testing hooks in optimized builds.
+
+When hooking a Win32 API, the detour and trampoline must use the API's exact signature and calling
+convention. In most cases this means `unsafe extern "system" fn(...)`. This is especially important
+on 32-bit Windows, where the system ABI differs from Rust's native ABI.
+
+`MinHook::uninitialize` is unsafe because it can invalidate every trampoline allocated by the
+native library. Call it only after all detours and trampoline calls have stopped. The wrapper will
+not tear down a MinHook instance that it detected was initialized by another component.
 
 ## License
 

@@ -5,6 +5,9 @@ use std::mem;
 #[test]
 fn test_hook_trampoline_enable_and_disable_hook() {
     unsafe {
+        let test_fn_trampoline_orig = std::hint::black_box(test_fn_trampoline_orig as FnType);
+        let test_fn_trampoline_hook = std::hint::black_box(test_fn_trampoline_hook as FnType);
+
         // Create a hook for `test_fn_trampoline_orig`
         let trampoline =
             MinHook::create_hook(test_fn_trampoline_orig as _, test_fn_trampoline_hook as _)
@@ -27,10 +30,12 @@ fn test_hook_trampoline_enable_and_disable_hook() {
     type FnType = fn(i32) -> i32;
     static TRAMPOLINE: OnceCell<FnType> = OnceCell::new();
 
+    #[inline(never)]
     fn test_fn_trampoline_orig(x: i32) -> i32 {
         x
     }
 
+    #[inline(never)]
     fn test_fn_trampoline_hook(_x: i32) -> i32 {
         // Set a value that we want to return for the test.
         let val = 42;

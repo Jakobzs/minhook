@@ -2,7 +2,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
+  lint:
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -19,5 +19,32 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets -- -D clippy::all
 
+  test:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            profile: debug
+            flags: ""
+          - target: x86_64-pc-windows-msvc
+            profile: release
+            flags: --release
+          - target: i686-pc-windows-msvc
+            profile: debug
+            flags: ""
+          - target: i686-pc-windows-msvc
+            profile: release
+            flags: --release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
+
       - name: Test
-        run: cargo test --all-targets
+        run: cargo test --all-targets --target ${{ matrix.target }} ${{ matrix.flags }}

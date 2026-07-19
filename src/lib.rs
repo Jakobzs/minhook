@@ -10,7 +10,11 @@
 //! use minhook::{MinHook, MH_STATUS};
 //!
 //! fn main() -> Result<(), MH_STATUS> {
-//!     // Create a hook for the return_0 function, detouring it to return_1
+//!     // Keep calls indirect so optimized builds cannot bypass the patched entry point.
+//!     let return_0 = std::hint::black_box(return_0 as fn() -> i32);
+//!     let return_1 = std::hint::black_box(return_1 as fn() -> i32);
+//!
+//!     // Create a hook for the return_0 function, detouring it to return_1.
 //!     let return_0_address = unsafe { MinHook::create_hook(return_0 as _, return_1 as _)? };
 //!
 //!     // Enable the hook
@@ -28,10 +32,12 @@
 //!     Ok(())
 //! }
 //!
+//! #[inline(never)]
 //! fn return_0() -> i32 {
 //!     0
 //! }
 //!
+//! #[inline(never)]
 //! fn return_1() -> i32 {
 //!     1
 //! }
@@ -46,7 +52,7 @@ use std::{
     ffi::{CString, c_void},
     fmt,
     ptr::null_mut,
-    sync::Once,
+    sync::{Mutex, MutexGuard},
 };
 use tracing::debug;
 
@@ -54,50 +60,102 @@ mod ffi;
 
 const MH_ALL_HOOKS: *const i32 = std::ptr::null();
 
-static MINHOOK_INIT: Once = Once::new();
-static MINHOOK_UNINIT: Once = Once::new();
+#[derive(Debug)]
+struct MinHookState {
+    initialized: bool,
+    owned: bool,
+}
+
+static MINHOOK_STATE: Mutex<MinHookState> = Mutex::new(MinHookState {
+    initialized: false,
+    owned: false,
+});
 
 /// A struct to access the MinHook API.
 pub struct MinHook {}
 
 impl MinHook {
-    // Initialize MinHook
-    fn initialize() {
-        MINHOOK_INIT.call_once(|| {
-            let status = unsafe { MH_Initialize() };
-            debug!("MH_Initialize: {:?}", status);
-
-            match status.ok() {
-                Ok(_) => (), // Initialization successful, do nothing
-                Err(MH_STATUS::MH_ERROR_ALREADY_INITIALIZED) => (), // Ignore if already initialized
-                Err(e) => panic!("Could not initialize MinHook, error: {e:?}"),
-            }
-        });
+    fn state() -> MutexGuard<'static, MinHookState> {
+        MINHOOK_STATE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Uninitializes MinHook. This function is only possible to call once. If you want to reinitialize MinHook, you need to restart the program.
+    // Initialize MinHook and retain the state lock for the native operation that follows.
+    fn initialize() -> Result<MutexGuard<'static, MinHookState>, MH_STATUS> {
+        let mut state = Self::state();
+        if state.initialized {
+            return Ok(state);
+        }
+
+        let status = unsafe { MH_Initialize() };
+        debug!("MH_Initialize: {:?}", status);
+
+        match status {
+            MH_STATUS::MH_OK => {
+                state.initialized = true;
+                state.owned = true;
+                Ok(state)
+            }
+            MH_STATUS::MH_ERROR_ALREADY_INITIALIZED => {
+                // Another component owns the process-global MinHook instance. We can use it,
+                // but must not tear it down from `uninitialize`.
+                state.initialized = true;
+                state.owned = false;
+                Ok(state)
+            }
+            _ => Err(status),
+        }
+    }
+
+    /// Detaches this wrapper from MinHook and uninitializes the native library when this
+    /// wrapper initialized it.
+    ///
+    /// A later API call may initialize MinHook again. If MinHook was already initialized by
+    /// another component, this method only resets the wrapper's state and leaves the shared
+    /// native instance running.
     ///
     /// # Safety
-    pub fn uninitialize() {
-        // Make sure we are initialized before we uninitialize
-        Self::initialize();
+    ///
+    /// The caller must ensure that no thread is executing a detour or trampoline and that no
+    /// trampoline pointer returned by this crate will be called after this method succeeds.
+    /// All other users of the process-global MinHook instance must be synchronized with this
+    /// operation.
+    pub unsafe fn uninitialize() -> Result<(), MH_STATUS> {
+        let mut state = Self::state();
+        if !state.initialized {
+            return Err(MH_STATUS::MH_ERROR_NOT_INITIALIZED);
+        }
 
-        MINHOOK_UNINIT.call_once(|| {
-            let status = unsafe { MH_Uninitialize() };
-            debug!("MH_Uninitialize: {:?}", status);
+        if !state.owned {
+            state.initialized = false;
+            return Ok(());
+        }
 
-            status.ok().expect("Could not uninitialize MinHook");
-        });
+        let status = unsafe { MH_Uninitialize() };
+        debug!("MH_Uninitialize: {:?}", status);
+
+        if status == MH_STATUS::MH_OK {
+            state.initialized = false;
+            state.owned = false;
+        }
+
+        status.ok()
     }
 
     /// Creates a hook for the target function and detours it to the detour function. This function returns the original function pointer.
     ///
     /// # Safety
+    ///
+    /// `target` and `detour` must be valid executable function addresses with identical
+    /// signatures and calling conventions. Neither function may unwind across an incompatible
+    /// ABI boundary. The returned trampoline may only be called while the hook exists and
+    /// MinHook remains initialized.
     pub unsafe fn create_hook(
         target: *mut c_void,
         detour: *mut c_void,
     ) -> Result<*mut c_void, MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let mut pp_original: *mut c_void = null_mut();
         let status = unsafe { MH_CreateHook(target, detour, &mut pp_original) };
@@ -111,12 +169,17 @@ impl MinHook {
     /// Creates a hook for the targeted API function and detours it to the detour function. This function returns the original function pointer.
     ///
     /// # Safety
+    ///
+    /// `detour` must have exactly the same signature and calling convention as the named API.
+    /// Win32 API detours should normally use `extern "system"`. The detour must not unwind across
+    /// the foreign ABI boundary. The returned trampoline may only be called while the hook exists
+    /// and MinHook remains initialized.
     pub unsafe fn create_hook_api<T: AsRef<str>>(
         module_name: T,
         proc_name: T,
         detour: *mut c_void,
     ) -> Result<*mut c_void, MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let mut module_name = module_name.as_ref().encode_utf16().collect::<Vec<_>>();
         module_name.push(0);
@@ -140,12 +203,17 @@ impl MinHook {
 
     /// Extended function for creating a hook for the targeted API function and detours it to the detour function. This function returns the original function pointer as well as a pointer to the target function.
     /// # Safety
+    ///
+    /// `detour` must have exactly the same signature and calling convention as the named API.
+    /// Win32 API detours should normally use `extern "system"`. The detour must not unwind across
+    /// the foreign ABI boundary. The returned pointers remain valid only while the hook exists,
+    /// its module remains loaded, and MinHook remains initialized.
     pub unsafe fn create_hook_api_ex<T: AsRef<str>>(
         module_name: T,
         proc_name: T,
         detour: *mut c_void,
     ) -> Result<(*mut c_void, *mut c_void), MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let mut module_name = module_name.as_ref().encode_utf16().collect::<Vec<_>>();
         module_name.push(0);
@@ -172,8 +240,11 @@ impl MinHook {
     /// Enables a hook for the target function.
     ///
     /// # Safety
+    ///
+    /// `target` must identify a hook created by MinHook. The caller must ensure that activating
+    /// the detour is sound for every thread that can call the target function.
     pub unsafe fn enable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let status = unsafe { MH_EnableHook(target) };
         debug!("MH_EnableHook: {:?}", status);
@@ -186,6 +257,9 @@ impl MinHook {
     /// Enables all hooks.
     ///
     /// # Safety
+    ///
+    /// The caller must ensure that activating every registered detour is sound for every thread
+    /// that can call the affected target functions.
     pub unsafe fn enable_all_hooks() -> Result<(), MH_STATUS> {
         unsafe { Self::enable_hook(MH_ALL_HOOKS as *mut _) }
     }
@@ -193,8 +267,11 @@ impl MinHook {
     /// Disables a hook for the target function.
     ///
     /// # Safety
+    ///
+    /// `target` must identify a hook created by MinHook. The caller must synchronize any code
+    /// that depends on whether the detour is active.
     pub unsafe fn disable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let status = unsafe { MH_DisableHook(target) };
         debug!("MH_DisableHook: {:?}", status);
@@ -207,6 +284,9 @@ impl MinHook {
     /// Disables all hooks.
     ///
     /// # Safety
+    ///
+    /// The caller must synchronize any code that depends on whether registered detours are
+    /// active.
     pub unsafe fn disable_all_hooks() -> Result<(), MH_STATUS> {
         unsafe { Self::disable_hook(MH_ALL_HOOKS as *mut _) }
     }
@@ -214,8 +294,11 @@ impl MinHook {
     /// Removes a hook for the target function.
     ///
     /// # Safety
+    ///
+    /// `target` must identify a hook created by MinHook. No thread may subsequently call the
+    /// trampoline returned when that hook was created.
     pub unsafe fn remove_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let status = unsafe { MH_RemoveHook(target) };
         debug!("MH_RemoveHook: {:?}", status);
@@ -228,8 +311,11 @@ impl MinHook {
     /// Queues a hook for enabling.
     ///
     /// # Safety
+    ///
+    /// `target` must identify a hook created by MinHook. The caller must ensure that activating
+    /// the detour will be sound when the queued operation is applied.
     pub unsafe fn queue_enable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let status = unsafe { MH_QueueEnableHook(target) };
         debug!("MH_QueueEnableHook: {:?}", status);
@@ -242,8 +328,11 @@ impl MinHook {
     /// Queues a hook for disabling.
     ///
     /// # Safety
+    ///
+    /// `target` must identify a hook created by MinHook. The caller must synchronize any code
+    /// that depends on whether the detour is active when the queued operation is applied.
     pub unsafe fn queue_disable_hook(target: *mut c_void) -> Result<(), MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let status = unsafe { MH_QueueDisableHook(target) };
         debug!("MH_QueueDisableHook: {:?}", status);
@@ -256,8 +345,11 @@ impl MinHook {
     /// Applies all queued hooks.
     ///
     /// # Safety
+    ///
+    /// The caller must satisfy the safety requirements of every queued enable or disable
+    /// operation and synchronize code that can execute the affected functions.
     pub unsafe fn apply_queued() -> Result<(), MH_STATUS> {
-        Self::initialize();
+        let _state = Self::initialize()?;
 
         let status = unsafe { MH_ApplyQueued() };
         debug!("MH_ApplyQueued: {:?}", status);

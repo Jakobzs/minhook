@@ -4,6 +4,11 @@ use std::ffi::c_void;
 #[test]
 fn test_hooks_queue() {
     unsafe {
+        let test_fn1 = std::hint::black_box(test_fn1 as FnType1);
+        let test_fn1_hook = std::hint::black_box(test_fn1_hook as FnType1);
+        let test_fn2 = std::hint::black_box(test_fn2 as FnType2);
+        let test_fn2_hook = std::hint::black_box(test_fn2_hook as FnType2);
+
         MinHook::create_hook(
             test_fn1 as FnType1 as *mut c_void,
             test_fn1_hook as FnType1 as *mut c_void,
@@ -37,18 +42,22 @@ fn test_hooks_queue() {
     type FnType1 = fn() -> i32;
     type FnType2 = fn(i32) -> i32;
 
+    #[inline(never)]
     fn test_fn1() -> i32 {
         0
     }
 
+    #[inline(never)]
     fn test_fn1_hook() -> i32 {
         1
     }
 
+    #[inline(never)]
     fn test_fn2(x: i32) -> i32 {
         x
     }
 
+    #[inline(never)]
     fn test_fn2_hook(x: i32) -> i32 {
         x + 1
     }
