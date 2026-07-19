@@ -140,13 +140,11 @@ impl MinHook {
 
     /// Extended function for creating a hook for the targeted API function and detours it to the detour function. This function returns the original function pointer as well as a pointer to the target function.
     /// # Safety
-    ///
-    /// TOOO: Revise if this is correct
     pub unsafe fn create_hook_api_ex<T: AsRef<str>>(
         module_name: T,
         proc_name: T,
         detour: *mut c_void,
-    ) -> Result<(*mut c_void, *mut *mut c_void), MH_STATUS> {
+    ) -> Result<(*mut c_void, *mut c_void), MH_STATUS> {
         Self::initialize();
 
         let mut module_name = module_name.as_ref().encode_utf16().collect::<Vec<_>>();
@@ -154,14 +152,14 @@ impl MinHook {
 
         let proc_name = CString::new(proc_name.as_ref()).unwrap();
         let mut pp_original: *mut c_void = null_mut();
-        let pp_target: *mut *mut c_void = null_mut();
+        let mut pp_target: *mut c_void = null_mut();
         let status = unsafe {
             MH_CreateHookApiEx(
                 module_name.as_ptr() as *const _,
                 proc_name.as_ptr() as *const _,
                 detour,
                 &mut pp_original,
-                pp_target,
+                &mut pp_target,
             )
         };
         debug!("MH_CreateHookApiEx: {:?}", status);

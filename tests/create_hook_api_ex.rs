@@ -12,11 +12,15 @@ fn test_create_hook_api_ex() {
         )
         .unwrap();
 
+        // The extended API must return the resolved target function instead of
+        // falling back to MinHook's null `MH_ALL_HOOKS` sentinel.
+        assert!(!target.is_null());
+
         // Grab the current process id
         let original_pid = std::process::id();
 
         // Enable the hook
-        MinHook::enable_hook(target as _).unwrap();
+        MinHook::enable_hook(target).unwrap();
 
         // Call the Rust std library function to get the current process id
         // It should return the value we set in the hook `get_current_process_id_hook`
@@ -29,7 +33,10 @@ fn test_create_hook_api_ex() {
         assert_eq!(original_fn(), original_pid);
 
         // Disable the hook
-        MinHook::disable_hook(target as _).unwrap();
+        MinHook::disable_hook(target).unwrap();
+
+        // Remove the hook so this test leaves no process-global MinHook state behind.
+        MinHook::remove_hook(target).unwrap();
     }
 
     fn get_current_process_id_hook() -> u32 {
