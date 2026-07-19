@@ -23,7 +23,7 @@ fn test_create_hook_api() {
         assert_eq!(std::process::id(), 42);
 
         // Transmute the original function address to a function pointer to make it callable
-        let original_fn: fn() -> u32 = std::mem::transmute(original);
+        let original_fn: unsafe extern "system" fn() -> u32 = std::mem::transmute(original);
 
         // Call the original function using the original function pointer
         assert_eq!(original_fn(), original_pid);
@@ -35,7 +35,7 @@ fn test_create_hook_api() {
         assert_eq!(std::process::id(), original_pid);
     }
 
-    fn get_current_process_id_hook() -> u32 {
+    unsafe extern "system" fn get_current_process_id_hook() -> u32 {
         42
     }
 }
